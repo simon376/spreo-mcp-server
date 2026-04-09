@@ -37,8 +37,21 @@ function extractText(state: Record<string, unknown>): string {
 }
 
 function cleanSectionTitle(raw: string): string {
-  // Remove numbering like "#1\n\n" and collapse newlines
   return raw.replace(/^#\d+\s*/g, "").replace(/\n+/g, " ").trim();
+}
+
+/** Recursively collect all descendant IDs from childLinks */
+function collectDescendants(
+  id: string,
+  childLinks: Record<string, Record<string, string>>,
+  result: Set<string>
+): void {
+  const children = childLinks[id];
+  if (!children) return;
+  for (const childId of Object.keys(children)) {
+    result.add(childId);
+    collectDescendants(childId, childLinks, result);
+  }
 }
 
 export function parseSnapshot(
@@ -48,7 +61,7 @@ export function parseSnapshot(
     sectionTitle?: string;
   }
 ): ParsedBoard {
-  const { instances, states } = snapshot;
+  const { instances, states, childLinks } = snapshot;
 
   // Count types
   const typeCounts: Record<string, number> = {};
@@ -56,8 +69,8 @@ export function parseSnapshot(
     typeCounts[inst.type] = (typeCounts[inst.type] || 0) + 1;
   }
 
-  // Extract all items with content
-  const allItems: ParsedItem[] = [];
+  // Build a map of all items with content
+  const itemMap = new Map<string, ParsedItem>();
   for (const [id, state] of Object.entries(states)) {
     const inst = instances[id];
     if (!inst || inst.type === "root") continue;
@@ -65,7 +78,7 @@ export function parseSnapshot(
     const content = extractText(state);
     if (!content) continue;
 
-    allItems.push({
+    itemMap.set(id, {
       id,
       type: inst.type,
       content: content.trim(),
@@ -77,45 +90,80 @@ export function parseSnapshot(
     });
   }
 
-  // Identify section headers: Shapes with content, sorted by y-position
-  const sectionHeaders = allItems
-    .filter((i) => i.type === "Shape" && i.content)
-    .sort((a, b) => a.y - b.y);
+  // Identify labeled section headers (small Shapes with text like "#1 Introduction")
+  const sectionHeaders: { id: string; title: string; y: number }[] = [];
+  for (const [id, state] of Object.entries(states)) {
+    const inst = instances[id];
+    if (!inst || inst.type !== "Shape") continue;
+    const content = extractText(state);
+    if (!content) continue;
+    sectionHeaders.push({
+      id,
+      title: cleanSectionTitle(content),
+      y: (state["y"] as number) || 0,
+    });
+  }
+  sectionHeaders.sort((a, b) => a.y - b.y);
 
-  // Non-shape items with content
-  const contentItems = allItems
-    .filter((i) => i.type !== "Shape")
-    .sort((a, b) => a.y - b.y || a.x - b.x);
-
-  // Assign items to sections by y-range
-  // Each section spans from its y to the next section's y
-  const sections: BoardSection[] = [];
+  // Find unlabeled container Shapes (no text, have children) and group them by section
+  // Strategy: for each section header, find containers at similar y-level (within y-range to next header)
   const assignedIds = new Set<string>();
+  const sections: BoardSection[] = [];
 
   for (let i = 0; i < sectionHeaders.length; i++) {
     const header = sectionHeaders[i];
     const nextHeader = sectionHeaders[i + 1];
-    const yStart = header.y;
-    const yEnd = nextHeader ? nextHeader.y : Infinity;
+    const yStart = header.y - 100; // small tolerance
+    const yEnd = nextHeader ? nextHeader.y - 100 : Infinity;
 
-    const sectionItems: ParsedItem[] = [];
-    for (const item of contentItems) {
-      if (item.y >= yStart && item.y < yEnd) {
-        sectionItems.push(item);
-        assignedIds.add(item.id);
+    // Find all container shapes in this y-range (unlabeled shapes with children)
+    const containerIds: string[] = [];
+    for (const [id, state] of Object.entries(states)) {
+      const inst = instances[id];
+      if (!inst || inst.type !== "Shape") continue;
+      const content = extractText(state);
+      if (content) continue; // skip labeled shapes (they're headers)
+      const y = (state["y"] as number) || 0;
+      const hasChildren = childLinks[id] && Object.keys(childLinks[id]).length > 0;
+      if (hasChildren && y >= yStart && y < yEnd) {
+        containerIds.push(id);
       }
     }
 
+    // Collect all descendants of these containers
+    const sectionDescendants = new Set<string>();
+    for (const containerId of containerIds) {
+      collectDescendants(containerId, childLinks, sectionDescendants);
+    }
+
+    // Build section items from descendants that have content
+    const sectionItems: ParsedItem[] = [];
+    for (const descId of sectionDescendants) {
+      const item = itemMap.get(descId);
+      if (item && item.type !== "Shape") {
+        sectionItems.push(item);
+        assignedIds.add(descId);
+      }
+    }
+
+    // Also mark the header and containers as assigned
+    assignedIds.add(header.id);
+    for (const cid of containerIds) assignedIds.add(cid);
+
+    sectionItems.sort((a, b) => a.y - b.y || a.x - b.x);
+
     sections.push({
       id: header.id,
-      title: cleanSectionTitle(header.content),
+      title: header.title,
       y: header.y,
       items: sectionItems,
     });
   }
 
-  // Ungrouped: items before the first section
-  const ungrouped = contentItems.filter((i) => !assignedIds.has(i.id));
+  // Ungrouped: items not assigned to any section
+  const ungrouped = [...itemMap.values()]
+    .filter((i) => !assignedIds.has(i.id) && i.type !== "Shape")
+    .sort((a, b) => a.y - b.y || a.x - b.x);
 
   // Apply filters
   let filteredSections = sections;
@@ -166,6 +214,9 @@ export function formatParsedBoard(
 
   for (const section of board.sections) {
     lines.push(`### ${section.title}`);
+    if (section.items.length === 0) {
+      lines.push("*(empty)*");
+    }
     for (const item of section.items) {
       if (item.content) {
         const content = item.content.replace(/\n/g, " ");
