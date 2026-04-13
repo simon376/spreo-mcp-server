@@ -32,6 +32,7 @@ function extractText(state: Record<string, unknown>): string {
     (state["content|value"] as string) ||
     (state["value"] as string) ||
     (state["text"] as string) ||
+    (state["url"] as string) ||
     ""
   );
 }
