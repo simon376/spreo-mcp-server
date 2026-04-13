@@ -24,7 +24,7 @@ Log in to https://ludi.co/developers and copy your API key.
 ### 2. Build
 
 ```bash
-git clone https://gitlab.xitaso.com/simon.stieber/ludi-mcp-server.git
+git clone https://github.com/s1st/ludi-mcp-server.git
 cd ludi-mcp-server
 npm install
 npm run build
