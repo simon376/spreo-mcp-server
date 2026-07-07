@@ -1,16 +1,16 @@
 {
-  "name": "ludi-mcp-server",
+  "name": "spreo-mcp-server",
   "version": "1.0.0",
-  "description": "Read-only MCP server for Ludi board/whiteboard API",
+  "description": "Read-only MCP server for Spreo (formerly Ludi) board/whiteboard API",
   "main": "dist/index.js",
   "bin": {
-    "ludi-mcp-server": "dist/index.js"
+    "spreo-mcp-server": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js"
   },
-  "keywords": ["mcp", "ludi"],
+  "keywords": ["mcp", "spreo", "ludi"],
   "author": "Simon Stieber",
   "license": "MIT",
   "type": "module",

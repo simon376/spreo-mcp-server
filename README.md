@@ -1,6 +1,8 @@
-# ludi-mcp-server (read-only)
+# spreo-mcp-server (read-only)
 
-MCP server that gives AI assistants read-only access to [Ludi](https://ludi.co/) boards (formerly Metro Retro).
+MCP server that gives AI assistants read-only access to [Spreo](https://spreo.io/) boards (formerly Ludi / Metro Retro).
+
+> **Rename note:** the product was renamed **Ludi → Spreo** (July 2026). The API now lives at `spreo.io` (`ludi.co` still 301-redirects) and the API-key env var is **`SPREO_API_KEY`** (the old `LUDI_API_KEY` is still accepted as a fallback).
 
 ## Tools
 
@@ -17,15 +19,15 @@ All tools are **read-only**. The server cannot create, modify, or delete anythin
 
 ## Setup
 
-### 1. Get your Ludi API key
+### 1. Get your Spreo API key
 
-Log in to https://ludi.co/developers and copy your API key.
+Log in to https://spreo.io/developers and copy your API key.
 
 ### 2. Build
 
 ```bash
-git clone https://github.com/s1st/ludi-mcp-server.git
-cd ludi-mcp-server
+git clone https://gitlab.xitaso.com/aithena/spreo-mcp-server.git
+cd spreo-mcp-server
 npm install
 npm run build
 ```
@@ -36,11 +38,11 @@ Add to `~/.claude/.mcp.json`:
 
 ```json
 {
-  "ludi": {
+  "spreo": {
     "command": "node",
-    "args": ["/path/to/ludi-mcp-server/dist/index.js"],
+    "args": ["/path/to/spreo-mcp-server/dist/index.js"],
     "env": {
-      "LUDI_API_KEY": "your-api-key-here"
+      "SPREO_API_KEY": "your-api-key-here"
     }
   }
 }
@@ -73,20 +75,20 @@ The parser identifies sections by:
 2. Finding unlabeled container Shapes at the same y-level that hold the actual content
 3. Using `childLinks` to recursively collect all items inside those containers
 
-This matches how Ludi organizes boards — items placed inside a zone Shape become its children.
+This matches how Spreo organizes boards — items placed inside a zone Shape become its children.
 
 ## Known limitations
 
 - **Floating items**: Stickies placed outside any zone container show up as "Ungrouped"
 - **Reactions**: Emoji reactions show as unicode codepoints (e.g. `2705` instead of ✅)
-- **Tasks API**: The `list_tasks` endpoint currently returns a 500 error on Ludi's side — the tool will work once they fix it
+- **Tasks API**: The `list_tasks` endpoint currently returns a 500 error on Spreo's side — the tool will work once they fix it
 
 ## Tech
 
 - TypeScript + [MCP SDK](https://github.com/modelcontextprotocol/typescript-sdk)
-- Ludi API v2 (Bearer token auth)
+- Spreo API v2 (Bearer token auth)
 - ~200 lines of code
 
-## Ludi API docs
+## Spreo API docs
 
-Full API reference (requires login): https://ludi.co/developers
+Full API reference (requires login): https://spreo.io/developers

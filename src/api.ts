@@ -1,8 +1,12 @@
-const BASE_URL = "https://ludi.co/api/v2";
+// Spreo (formerly Ludi / Metro Retro). ludi.co still 301-redirects here, but we
+// target the new domain directly. SPREO_API_KEY replaces the old LUDI_API_KEY;
+// the old name is still accepted as a fallback so existing setups don't break.
+const BASE_URL = "https://spreo.io/api/v2";
 
 function getApiKey(): string {
-  const key = process.env.LUDI_API_KEY;
-  if (!key) throw new Error("LUDI_API_KEY environment variable is not set");
+  const key = process.env.SPREO_API_KEY ?? process.env.LUDI_API_KEY;
+  if (!key)
+    throw new Error("SPREO_API_KEY environment variable is not set (formerly LUDI_API_KEY)");
   return key;
 }
 
@@ -20,7 +24,7 @@ async function request<T>(endpoint: string, params?: Record<string, string>): Pr
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Ludi API error ${res.status}: ${body}`);
+    throw new Error(`Spreo API error ${res.status}: ${body}`);
   }
 
   return res.json() as Promise<T>;
@@ -38,7 +42,7 @@ async function post<T>(endpoint: string, body: Record<string, unknown>): Promise
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Ludi API error ${res.status}: ${text}`);
+    throw new Error(`Spreo API error ${res.status}: ${text}`);
   }
 
   return res.json() as Promise<T>;

@@ -7,10 +7,10 @@ import * as api from "./api.js";
 import { parseSnapshot, formatParsedBoard } from "./snapshot.js";
 
 const server = new McpServer(
-  { name: "ludi-readonly", version: "1.0.0" },
+  { name: "spreo-readonly", version: "1.0.0" },
   {
     instructions:
-      "Read-only access to Ludi boards. This server can only READ data — it cannot create, modify, or delete anything. Use list_boards to find boards, then get_board_content to read their content. Board content is returned as pre-parsed structured text with sections and items.",
+      "Read-only access to Spreo boards (formerly Ludi / Metro Retro). This server can only READ data — it cannot create, modify, or delete anything. Use list_boards to find boards, then get_board_content to read their content. Board content is returned as pre-parsed structured text with sections and items.",
   }
 );
 
@@ -215,7 +215,7 @@ server.tool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Ludi MCP server (read-only) running on stdio");
+  console.error("Spreo MCP server (read-only) running on stdio");
 }
 
 main().catch((e) => {
