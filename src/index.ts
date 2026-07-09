@@ -7,10 +7,10 @@ import * as api from "./api.js";
 import { parseSnapshot, formatParsedBoard } from "./snapshot.js";
 
 const server = new McpServer(
-  { name: "spreo-readonly", version: "1.0.0" },
+  { name: "spreo", version: "1.1.0" },
   {
     instructions:
-      "Read-only access to Spreo boards (formerly Ludi / Metro Retro). This server can only READ data — it cannot create, modify, or delete anything. Use list_boards to find boards, then get_board_content to read their content. Board content is returned as pre-parsed structured text with sections and items.",
+      "Access to Spreo boards (formerly Ludi / Metro Retro). Reads are unrestricted: use list_boards to find boards, then get_board_content to read their content (returned as pre-parsed structured text with sections and items). Writes are limited to creating boards: use list_templates to find a fitting template (e.g. for a meeting or workshop), then create_board to spin up a new board from that template (or from BLANK). The server CANNOT add individual items to a board, nor edit or delete existing content — board content is only editable in the Spreo app itself.",
   }
 );
 
@@ -210,12 +210,142 @@ server.tool(
   }
 );
 
+// --- list_templates ---
+
+server.tool(
+  "list_templates",
+  {
+    search: z
+      .string()
+      .optional()
+      .describe(
+        "Keyword(s) to match against template title, description, and tags (e.g. 'sales meeting', 'retro', 'planning'). Space-separated terms must all match. Omit to list all."
+      ),
+    teamOnly: z
+      .boolean()
+      .optional()
+      .describe("Only return account/team-owned templates (default false = all templates)"),
+    limit: z.number().optional().describe("Max results to return (default 25)"),
+  },
+  async (params) => {
+    try {
+      const templates = await api.listTemplates(params.teamOnly);
+      const all = Array.isArray(templates) ? templates : [];
+
+      const terms = (params.search ?? "")
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean);
+
+      const matches = all.filter((t) => {
+        if (terms.length === 0) return true;
+        const haystack = [
+          t.label,
+          t.description,
+          ...(t.tags ?? []).map((tag) => tag.label),
+        ]
+          .join(" ")
+          .toLowerCase();
+        return terms.every((term) => haystack.includes(term));
+      });
+
+      const limit = params.limit ?? 25;
+      const shown = matches.slice(0, limit);
+
+      if (shown.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: params.search
+                ? `No templates match "${params.search}".`
+                : "No templates found.",
+            },
+          ],
+        };
+      }
+
+      const header =
+        matches.length > shown.length
+          ? `Found ${matches.length} matching templates (showing ${shown.length}):\n`
+          : `Found ${shown.length} templates:\n`;
+      const lines = [header];
+      for (const t of shown) {
+        const tags = (t.tags ?? []).map((tag) => tag.label).join(", ");
+        const owned = t.accountId ? " [team]" : "";
+        lines.push(`- **${t.label}**${owned} (ID: ${t.id})`);
+        if (t.description) lines.push(`  ${t.description}`);
+        if (tags) lines.push(`  Tags: ${tags}`);
+      }
+      lines.push("\nUse create_board with source=<template ID> to create a board from one.");
+
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    } catch (e: unknown) {
+      return { content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true };
+    }
+  }
+);
+
+// --- create_board ---
+
+server.tool(
+  "create_board",
+  {
+    label: z.string().describe("Name for the new board"),
+    workspaceId: z.string().describe("Workspace ID to create the board in (from list_workspaces)"),
+    source: z
+      .string()
+      .optional()
+      .describe(
+        "'BLANK' for an empty board, or a template ID (from list_templates) to clone that template's content. Defaults to BLANK."
+      ),
+    folderId: z.string().optional().describe("Optional folder ID within the workspace"),
+  },
+  async (params) => {
+    try {
+      const source = params.source ?? "BLANK";
+      const board = await api.createBoard({
+        source,
+        label: params.label,
+        workspaceId: params.workspaceId,
+        folderId: params.folderId,
+      });
+
+      // Verify: read the board back and report what actually landed on it.
+      let verification = "";
+      try {
+        const snapshot = await api.getBoardSnapshot(board.podId);
+        const itemCount = Object.keys(snapshot.instances ?? {}).length;
+        verification =
+          source === "BLANK"
+            ? `\nVerified: board is reachable (${itemCount} instances, expected empty).`
+            : `\nVerified: template content copied — ${itemCount} items on the board.`;
+        if (source !== "BLANK" && itemCount === 0) {
+          verification =
+            "\n⚠️ Warning: created from a template but the board read back empty. It may still be provisioning — check it in the Spreo app.";
+        }
+      } catch (verifyErr: unknown) {
+        verification = `\n⚠️ Board was created but could not be read back to verify: ${(verifyErr as Error).message}`;
+      }
+
+      const lines = [
+        `Created board **${board.label}** (ID: ${board.id}).`,
+        `Source: ${source === "BLANK" ? "blank" : `template ${source}`}`,
+        verification,
+      ];
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    } catch (e: unknown) {
+      return { content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true };
+    }
+  }
+);
+
 // --- Start server ---
 
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Spreo MCP server (read-only) running on stdio");
+  console.error("Spreo MCP server running on stdio");
 }
 
 main().catch((e) => {

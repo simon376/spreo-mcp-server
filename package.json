@@ -1,7 +1,7 @@
 {
   "name": "spreo-mcp-server",
-  "version": "1.0.0",
-  "description": "Read-only MCP server for Spreo (formerly Ludi) board/whiteboard API",
+  "version": "1.1.0",
+  "description": "MCP server for Spreo (formerly Ludi) boards — read board content and create boards from templates",
   "main": "dist/index.js",
   "bin": {
     "spreo-mcp-server": "dist/index.js"
