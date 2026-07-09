@@ -143,6 +143,35 @@ export interface TaskListResponse {
   total: number;
 }
 
+export interface TemplateTag {
+  id: string;
+  name: string;
+  label: string;
+  color?: string;
+}
+
+export interface TemplateItem {
+  id: string;
+  alias?: string;
+  label: string;
+  description: string;
+  accountId: string | null; // non-null → account/team-owned template
+  complexity?: string | null;
+  people?: string | null;
+  time?: string | null;
+  thumbUrl?: string;
+  tags?: TemplateTag[];
+}
+
+export interface CreatedBoard {
+  id: string;
+  podId: string;
+  label: string;
+  workspaceId: string;
+  folderId?: string | null;
+  createdAt: string;
+}
+
 // --- API functions ---
 
 export async function listBoards(params?: {
@@ -206,5 +235,37 @@ export async function listTasks(params: {
     sort: params.sort ?? "createdAt:desc",
     startAt: "0",
     maxResults: "50",
+  });
+}
+
+// --- Write functions ---
+
+/**
+ * Lists board templates. The API returns the full catalogue (no server-side text
+ * search), so callers filter client-side over label/description/tags.
+ * @param teamOnly when true, restricts to account/team-owned templates (filter=team).
+ */
+export async function listTemplates(teamOnly?: boolean): Promise<TemplateItem[]> {
+  return request<TemplateItem[]>("templates.list2", {
+    filter: teamOnly ? "team" : "",
+  });
+}
+
+/**
+ * Creates a new board. `source` is "BLANK", a template id, or an existing board id.
+ * Creating from a template clones its content synchronously (readable immediately via
+ * getBoardSnapshot). Returns the new board's id and podId.
+ */
+export async function createBoard(params: {
+  source: string;
+  label: string;
+  workspaceId: string;
+  folderId?: string;
+}): Promise<CreatedBoard> {
+  return post<CreatedBoard>("boards.create", {
+    source: params.source,
+    label: params.label,
+    workspaceId: params.workspaceId,
+    ...(params.folderId ? { folderId: params.folderId } : {}),
   });
 }

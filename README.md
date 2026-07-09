@@ -1,6 +1,6 @@
-# spreo-mcp-server (read-only)
+# spreo-mcp-server
 
-MCP server that gives AI assistants read-only access to [Spreo](https://spreo.io/) boards (formerly Ludi / Metro Retro).
+MCP server that gives AI assistants access to [Spreo](https://spreo.io/) boards (formerly Ludi / Metro Retro): read board content, and create new boards from templates.
 
 > **Rename note:** the product was renamed **Ludi → Spreo** (July 2026). The API now lives at `spreo.io` (`ludi.co` still 301-redirects) and the API-key env var is **`SPREO_API_KEY`** (the old `LUDI_API_KEY` is still accepted as a fallback).
 
@@ -14,8 +14,10 @@ MCP server that gives AI assistants read-only access to [Spreo](https://spreo.io
 | `get_board_participants` | See who's on a board |
 | `resolve_users` | Look up users by name or ID |
 | `list_tasks` | List action items for a workspace |
+| `list_templates` | Search board templates by keyword (title, description, tags) — e.g. find a template for a meeting or retro |
+| `create_board` | Create a new board from a template (or blank) in a workspace |
 
-All tools are **read-only**. The server cannot create, modify, or delete anything.
+The read tools are unrestricted. The only write capability is **creating boards** (blank or from a template). The server cannot add individual items to a board, nor edit or delete existing boards or their content — board content is only editable in the Spreo app itself.
 
 ## Setup
 
@@ -59,6 +61,7 @@ Once connected, just talk to Claude naturally:
 - "Extract the action items and contacts from that board"
 - "Who participated in the last retro?"
 - "Show me only the stickies from the Risks section"
+- "Find a good template for a customer discovery meeting and create a board from it in Team AIthena"
 
 ## How it works
 
