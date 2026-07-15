@@ -19,6 +19,8 @@ MCP server that gives AI assistants access to [Spreo](https://spreo.io/) boards 
 
 The read tools are unrestricted. The only write capability is **creating boards** (blank or from a template). The server cannot add individual items to a board, nor edit or delete existing boards or their content — board content is only editable in the Spreo app itself.
 
+> **Why write support is limited to board creation:** Spreo's REST API v2 exposes only board-level writes (`boards.create`, and cloning from a template). Board *canvas content* (stickies, text, shapes) is not REST-writable — it lives in a realtime transaction-log / CRDT model that is only mutated over Spreo's collaboration channel. Creating a board from a template does populate it synchronously (the template's content is cloned server-side), so template cloning is the supported way to produce a pre-authored board layout.
+
 ## Setup
 
 ### 1. Get your Spreo API key
@@ -28,7 +30,7 @@ Log in to https://spreo.io/developers and copy your API key.
 ### 2. Build
 
 ```bash
-git clone https://gitlab.xitaso.com/aithena/spreo-mcp-server.git
+git clone https://github.com/s1st/spreo-mcp-server.git
 cd spreo-mcp-server
 npm install
 npm run build
@@ -56,12 +58,12 @@ Restart Claude Code. The tools will be available automatically.
 
 Once connected, just talk to Claude naturally:
 
-- "What boards do we have in Team AIthena?"
+- "What boards do we have in my workspace?"
 - "Show me the content of the Kick-Off board"
 - "Extract the action items and contacts from that board"
 - "Who participated in the last retro?"
 - "Show me only the stickies from the Risks section"
-- "Find a good template for a customer discovery meeting and create a board from it in Team AIthena"
+- "Find a good template for a customer discovery meeting and create a board from it in my workspace"
 
 ## How it works
 
