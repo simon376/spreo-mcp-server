@@ -11,8 +11,28 @@ import { parseSnapshot, formatParsedBoard, extractFrames } from "./snapshot.js";
 const server = new McpServer(
   { name: "spreo", version: "1.1.0" },
   {
-    instructions:
-      "Access to Spreo boards (formerly Ludi / Metro Retro). Reads are unrestricted: use list_boards to find boards, then get_board_content to read their content (returned as pre-parsed structured text with sections and items). Use list_frames to discover frames on a board and get_frame_image to render a frame as a cropped PNG image (may take 30-60s). Writes are limited to creating boards: use list_templates to find a fitting template (e.g. for a meeting or workshop), then create_board to spin up a new board from that template (or from BLANK). The server CANNOT add individual items to a board, nor edit or delete existing content — board content is only editable in the Spreo app itself.",
+    instructions: [
+      "Access to Spreo boards (formerly Ludi / Metro Retro).",
+      "",
+      "## Recommended workflow",
+      "",
+      "1. **Find the board**: use list_boards (search by name or workspace).",
+      "2. **Read text content**: use get_board_content to get structured text (stickies, tasks, tokens with user IDs). Pass includeIds: true if you need to cross-reference items later.",
+      "3. **Identify participants**: use get_board_participants to see who's on the board. Pass visual: true to get a legend image with avatars, names, initials, and user IDs — essential for mapping tokens/avatars in visual exports.",
+      "4. **Discover frames**: use list_frames to get frame IDs and their PDF export URLs. Boards are divided into frames (the white rectangular sections visible on the canvas).",
+      "5. **Get visual snapshots**: use get_frame_image with a specific frameId to render that frame as a cropped PNG. Use the participant legend to identify who placed which items. Best called from a background agent (takes 30-60s). Each call triggers a server-side export and sends the board owner an email notification.",
+      "",
+      "## Tips",
+      "",
+      "- Combine text (step 2) + legend (step 3) + frame image (step 5) for full understanding of a board section.",
+      "- Token items in the text output show user IDs like (USRA4BBJYQLC) — match these to names via the participant list.",
+      "- Prefer frame-targeted exports over full-board — they're faster and more readable.",
+      "- The text output loses spatial layout and grouping; the image captures it but can't be searched. Use both.",
+      "",
+      "## Write operations",
+      "",
+      "Writes are limited to creating boards: use list_templates to find a fitting template, then create_board to create a board from it (or from BLANK). The server CANNOT add individual items, edit, or delete existing content — that's only possible in the Spreo app.",
+    ].join("\n"),
   }
 );
 
