@@ -233,7 +233,7 @@ export function extractFrames(snapshot: Snapshot): FrameInfo[] {
 export function formatParsedBoard(
   board: ParsedBoard,
   boardName: string,
-  options?: { includeIds?: boolean; frames?: FrameInfo[] }
+  options?: { frames?: FrameInfo[] }
 ): string {
   const lines: string[] = [];
 
@@ -271,7 +271,7 @@ export function formatParsedBoard(
     lines.push("");
   }
 
-  if (options?.includeIds && options.frames && options.frames.length > 0) {
+  if (options?.frames && options.frames.length > 0) {
     lines.push("### Frames (for use with get_frame_image)");
     for (const f of options.frames) {
       lines.push(`- **${f.title}** — frameId: \`${f.id}\` (${f.itemCount} items)`);

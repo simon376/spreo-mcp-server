@@ -83,10 +83,6 @@ server.tool(
       .string()
       .optional()
       .describe("Filter to a specific section by title (substring match)"),
-    includeIds: z
-      .boolean()
-      .optional()
-      .describe("Append a list of frame IDs at the end of the output (default false). Use these IDs with get_frame_image to export visual snapshots of specific board sections."),
   },
   async (params) => {
     try {
@@ -102,11 +98,8 @@ server.tool(
         sectionTitle: params.section,
       });
 
-      const frames = params.includeIds ? extractFrames(snapshot) : undefined;
-      const text = formatParsedBoard(parsed, info.label, {
-        includeIds: params.includeIds,
-        frames,
-      });
+      const frames = extractFrames(snapshot);
+      const text = formatParsedBoard(parsed, info.label, { frames });
       return { content: [{ type: "text", text }] };
     } catch (e: unknown) {
       return { content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true };
