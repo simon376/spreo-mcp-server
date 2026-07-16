@@ -4,7 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
 import * as api from "./api.js";
-import { parseSnapshot, formatParsedBoard } from "./snapshot.js";
+import { parseSnapshot, formatParsedBoard, extractFrames } from "./snapshot.js";
 
 const server = new McpServer(
   { name: "spreo", version: "1.1.0" },
@@ -61,6 +61,10 @@ server.tool(
       .string()
       .optional()
       .describe("Filter to a specific section by title (substring match)"),
+    includeIds: z
+      .boolean()
+      .optional()
+      .describe("Include item and section IDs in the output (default false). Useful for cross-referencing with frames or export URLs."),
   },
   async (params) => {
     try {
@@ -76,8 +80,43 @@ server.tool(
         sectionTitle: params.section,
       });
 
-      const text = formatParsedBoard(parsed, info.label);
+      const text = formatParsedBoard(parsed, info.label, {
+        includeIds: params.includeIds,
+      });
       return { content: [{ type: "text", text }] };
+    } catch (e: unknown) {
+      return { content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true };
+    }
+  }
+);
+
+// --- list_frames ---
+
+server.tool(
+  "list_frames",
+  {
+    boardId: z.string().describe("Board ID (from list_boards)"),
+  },
+  async (params) => {
+    try {
+      const info = await api.getBoardInfo(params.boardId);
+      const snapshot = await api.getBoardSnapshot(info.podId);
+      const frames = extractFrames(snapshot);
+
+      if (frames.length === 0) {
+        return { content: [{ type: "text", text: "No frames found on this board." }] };
+      }
+
+      const lines = [`Found ${frames.length} frames on **${info.label}**:\n`];
+      for (const f of frames) {
+        lines.push(`- **${f.title}** (ID: ${f.id})`);
+        lines.push(`  Items: ${f.itemCount} | Position: (${f.x}, ${f.y})`);
+        lines.push(`  PDF export: https://spreo.io/${params.boardId}.pdf?mode=ui&targets=%5B${f.id}%5D`);
+      }
+      lines.push("");
+      lines.push(`Full board PDF: https://spreo.io/${params.boardId}.pdf`);
+
+      return { content: [{ type: "text", text: lines.join("\n") }] };
     } catch (e: unknown) {
       return { content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true };
     }
