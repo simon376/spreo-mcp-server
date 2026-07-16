@@ -86,7 +86,7 @@ server.tool(
     includeIds: z
       .boolean()
       .optional()
-      .describe("Include item and section IDs in the output (default false). Useful for cross-referencing with frames or export URLs."),
+      .describe("Append a list of frame IDs at the end of the output (default false). Use these IDs with get_frame_image to export visual snapshots of specific board sections."),
   },
   async (params) => {
     try {
@@ -102,8 +102,10 @@ server.tool(
         sectionTitle: params.section,
       });
 
+      const frames = params.includeIds ? extractFrames(snapshot) : undefined;
       const text = formatParsedBoard(parsed, info.label, {
         includeIds: params.includeIds,
+        frames,
       });
       return { content: [{ type: "text", text }] };
     } catch (e: unknown) {

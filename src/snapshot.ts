@@ -233,10 +233,9 @@ export function extractFrames(snapshot: Snapshot): FrameInfo[] {
 export function formatParsedBoard(
   board: ParsedBoard,
   boardName: string,
-  options?: { includeIds?: boolean }
+  options?: { includeIds?: boolean; frames?: FrameInfo[] }
 ): string {
   const lines: string[] = [];
-  const showIds = options?.includeIds ?? false;
 
   lines.push(`## Board: ${boardName}`);
   lines.push(`**Items:** ${board.totalItems} | **Version:** ${board.version}`);
@@ -248,8 +247,7 @@ export function formatParsedBoard(
   lines.push("");
 
   for (const section of board.sections) {
-    const sectionLabel = showIds ? `### ${section.title} (id: ${section.id})` : `### ${section.title}`;
-    lines.push(sectionLabel);
+    lines.push(`### ${section.title}`);
     if (section.items.length === 0) {
       lines.push("*(empty)*");
     }
@@ -257,8 +255,7 @@ export function formatParsedBoard(
       if (item.content) {
         const content = item.content.replace(/\n/g, " ");
         const prefix = item.type === "Text" ? "" : `[${item.type}] `;
-        const suffix = showIds ? ` (${item.id})` : "";
-        lines.push(`- ${prefix}${content}${suffix}`);
+        lines.push(`- ${prefix}${content}`);
       }
     }
     lines.push("");
@@ -269,8 +266,15 @@ export function formatParsedBoard(
     for (const item of board.ungrouped) {
       const content = item.content.replace(/\n/g, " ");
       const prefix = item.type === "Text" ? "" : `[${item.type}] `;
-      const suffix = showIds ? ` (${item.id})` : "";
-      lines.push(`- ${prefix}${content}${suffix}`);
+      lines.push(`- ${prefix}${content}`);
+    }
+    lines.push("");
+  }
+
+  if (options?.includeIds && options.frames && options.frames.length > 0) {
+    lines.push("### Frames (for use with get_frame_image)");
+    for (const f of options.frames) {
+      lines.push(`- **${f.title}** — frameId: \`${f.id}\` (${f.itemCount} items)`);
     }
     lines.push("");
   }
