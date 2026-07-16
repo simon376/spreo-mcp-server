@@ -10,16 +10,23 @@
     "build": "tsc",
     "start": "node dist/index.js"
   },
-  "keywords": ["mcp", "spreo", "ludi"],
+  "keywords": [
+    "mcp",
+    "spreo",
+    "ludi"
+  ],
   "author": "Simon Stieber",
   "license": "MIT",
   "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "pdf-to-img": "^6.2.0",
+    "sharp": "^0.35.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
+    "@types/sharp": "^0.31.1",
     "typescript": "^6.0.2"
   }
 }

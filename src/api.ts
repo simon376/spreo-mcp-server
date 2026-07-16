@@ -3,7 +3,7 @@
 // the old name is still accepted as a fallback so existing setups don't break.
 const BASE_URL = "https://spreo.io/api/v2";
 
-function getApiKey(): string {
+export function getApiKey(): string {
   const key = process.env.SPREO_API_KEY ?? process.env.LUDI_API_KEY;
   if (!key)
     throw new Error("SPREO_API_KEY environment variable is not set (formerly LUDI_API_KEY)");
@@ -88,9 +88,13 @@ export interface BoardListResponse {
 }
 
 export interface Participant {
+  id: string;
   userId: string;
   name: string;
   color: string;
+  initials?: string;
+  shortName?: string;
+  photo?: string;
   photoUrl?: string;
 }
 
