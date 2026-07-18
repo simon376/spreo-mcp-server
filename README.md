@@ -28,7 +28,7 @@ Log in to https://spreo.io/developers and copy your API key.
 ### 2. Build
 
 ```bash
-git clone https://gitlab.xitaso.com/aithena/spreo-mcp-server.git
+git clone https://github.com/s1st/spreo-mcp-server.git
 cd spreo-mcp-server
 npm install
 npm run build
